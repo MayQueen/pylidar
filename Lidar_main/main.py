@@ -56,14 +56,14 @@ class rm_processing():
         主要属性：
             raw;height;rcs;
         """
-        RM_cal = RM_Calculate(
+        RM_cal = RM_Calculate(self.RM_reader.muti_header_info,
             self.RM_reader.muti_channel_info, self.RM_reader.muti_file_data)
         return RM_cal
 
 
 if __name__ == "__main__":
     print('\n' + '程序开始运行!' + '\n')
-    RM_PATH = "D:\A_Study\A-Practice\PY_Lidar-master\Data" + "\\"
+    RM_PATH = "..\Data" + "\\"
 
     RM_main = rm_processing(RM_PATH)
     RM_reader = RM_main.reader()  # 读取文件
@@ -82,11 +82,11 @@ if __name__ == "__main__":
     # print(RM_cal.muti_channel_info)
     # print(RM_cal.input_range)
 
-    RM_cal.get_height()
-    RM_cal.get_raw_data()
+    # RM_cal.get_height()
+    # RM_cal.get_raw_data()
     RM_cal.get_rcs()
-    RM_cal.save_channel_height()
-    RM_cal.save_channel_raw()
-    RM_cal.save_channel_rcs()
+    # RM_cal.save_channel_height()
+    # RM_cal.save_raw()
+    # RM_cal.save_rcs()
 
     print('\n' + '### 程序运行完成!')

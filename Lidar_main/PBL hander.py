@@ -16,12 +16,12 @@ class pbl_cal(object):
     """
 
     def __init__(self, pd_rcs=[], pd_h=[]):
-        self.rcs = rcs
+        self.rcs = pd_rcs
         self.file_header = self.rcs.columns
-        self.h = h
+        self.h = pd_h
         self.pbl = []
 
-    def CRGM(self):
+    def CRGM(self, to_csv = False):
         """
         重力波梯度法反演边界层高度
         """
@@ -40,12 +40,16 @@ class pbl_cal(object):
             _pbl = self.h[header][i_min]
             self.pbl.append(_pbl)
         self.pbl = pd.DataFrame(self.pbl, index=self.file_header)
-        # print(self.pbl)
 
+        if to_csv == True:
+            self.pbl.to_csv("./Results/pbl/pbl.csv",)
+        else:
+            print(self.pbl.head())
 
-data_path = "rcs.xlsx"
-h = pd.read_excel(data_path, sheet_name="H", header=0, index_col=0)
-rcs = pd.read_excel(data_path, sheet_name="RCS", header=0, index_col=0)
+if __name__ == '__main__':
+    data_path = "plotdata/rcs.xlsx"
+    h = pd.read_excel(data_path, sheet_name="H", header=0, index_col=0)
+    rcs = pd.read_excel(data_path, sheet_name="RCS", header=0, index_col=0)
 
-pbl_c = pbl_cal(rcs, h)
-pbl_c.CRGM()
+    pbl_c = pbl_cal(rcs, h)
+    pbl_c.CRGM()
