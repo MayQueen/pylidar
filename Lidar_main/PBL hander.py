@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-@NAME      :Klett method.py
+@NAME      :Klett Fernald method.py
 @TIME      :2021/03/25 11:10:28
 @AUTHOR     :MERI
 @Email     :mayqueen2016@163.com
@@ -47,7 +47,7 @@ class pbl_cal(object):
             print(self.pbl.head())
 
 if __name__ == '__main__':
-    data_path = "plotdata/rcs.xlsx"
+    data_path = "Results/plotdata/rcs.xlsx"
     h = pd.read_excel(data_path, sheet_name="H", header=0, index_col=0)
     rcs = pd.read_excel(data_path, sheet_name="RCS", header=0, index_col=0)
 

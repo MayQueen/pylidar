@@ -82,11 +82,7 @@ if __name__ == "__main__":
     # print(RM_cal.muti_channel_info)
     # print(RM_cal.input_range)
 
-    # RM_cal.get_height()
+    RM_cal.to_csv('RCS') # ['Height','Raw','RCS']
     # RM_cal.get_raw_data()
-    RM_cal.get_rcs()
-    # RM_cal.save_channel_height()
-    # RM_cal.save_raw()
-    # RM_cal.save_rcs()
 
     print('\n' + '### 程序运行完成!')

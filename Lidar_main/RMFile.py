@@ -263,21 +263,6 @@ class RM_Calculate():
     说明：处理RM File 中每个频道(channel)的数据
     输入：
         muti_channel_info, muti_file_data
-    可用的方法：
-        get_height();get_raw_data();get_rcs();
-        save_height();save_raw_data();save_rcs_data();
-        save_height();
-        save_channel_raw();
-        save_channel_rcs();
-    属性：
-        num_files;num_channels;muti_file_data;
-        raw;height;rcs_list;
-        adcbits;
-        data_points;
-        bin_width;
-        shot_number;
-        input_range;
-        dataset_mode;
     """
 
     def __init__(self, muti_header_info, muti_channel_info, muti_file_data):
@@ -289,9 +274,9 @@ class RM_Calculate():
 
         self.muti_file_data = np.array(muti_file_data)
 
-        self.height = []
-        self.raw = []
-        self.rcs = []
+        # self.height = []
+        # self.raw = []
+        # self.rcs = []
         self.start_time = []
         self.end_time = []
 
@@ -336,7 +321,7 @@ class RM_Calculate():
         for ibin in range(len(self.bin_width)):
             print("Height:第%s次计算" % str(ibin+1))
             _height.append([self.bin_width[ibin] * num_bin for num_bin in range(self.data_points[ibin])])
-        self.height = pd.DataFrame(_height,index=self.start_time)
+        self.height = pd.DataFrame(_height)
         return self.height
         # print(self.height)
         # print(self.start_time)
@@ -416,7 +401,7 @@ class RM_Calculate():
                             _signal_MHz.append(_mix_MHz)
                     _raw.append(_signal_mix)
 
-        self.raw = pd.DataFrame(_raw,index=self.start_time)
+        self.raw = pd.DataFrame(_raw)
         del _raw, _signal_mVolts, _signal_MHz, _signal_mix  # 删除变量
         return self.raw
         # print(pd.DataFrame(self.raw))
@@ -426,7 +411,7 @@ class RM_Calculate():
         """
         计算范围矫正信号(RCS,range corrected signal)
         """
-        self.get_raw_data() # 计算rcs前必须先计算rcs
+        self.get_raw_data() # 计算rcs前必须先计算Raw
         _rcs = []
         print('# 开始计算RCS')
 
@@ -448,66 +433,31 @@ class RM_Calculate():
             RCS = np.multiply(BCS, h_2)
             # RCS = np.where(_RCS > 0, _RCS, 0.000001)  # 避免去除噪声信号之后出现负值
 
-            self.rcs.append(RCS)
-        self.rcs = pd.DataFrame(self.rcs,index=self.start_time)
+            _rcs.append(RCS)
+        self.rcs = pd.DataFrame(_rcs)
         return self.rcs
         print("RCS:计算完成!")
         # print(self.rcs)
 
-        def to_csv(self,data):
-            if data == "Height":
-                channel_data = self.height
-            elif data == "Raw":
-                channe_data = self.raw
-            else:
-                channel_data = self.rcs
-
-            print('# 准备保存数据')
+    def to_csv(self,data):
+        def _save(self,data, channel_data):
+            print('# 准备[%s]数据' % str(data))
             for num_c in range(0, self.num_files * self.num_channels, self.num_channels):
-                _data = channe_data[num_c:num_c + self.num_channels]
+                _data = channel_data[num_c:num_c + self.num_channels]
                 # print(_height)
-                _data.T.to_csv('./Results/height/File %s Height.csv' % str(num_c),
+                _data.T.to_csv('./Results/RMFiles/File %s' % str(num_c) +  '%s.csv' % str(data),
                                     float_format='%.6f')
-
             print('# 保存完成!')
 
-
-    def save_height(self):
-        """
-        说明：保存每个channel的height数据
-        """
-
-        print('# 准备[%s]数据' % str("Height"))
-        for num_c in range(0,self.num_files*self.num_channels,self.num_channels):
-            _height = self.height[num_c:num_c+self.num_channels]
-            # print(_height)
-            _height.T.to_csv('./Results/height/File %s Height.csv' % str(num_c),
-                                     float_format='%.6f')
-
-        print('# 保存完成!')
-
-    def save_raw(self):
-        """
-        说明：保存每个channel的raw数据
-        """
-        self.get_raw_data()
-        print('# 准备[%s]数据' % str("raw"))
-        for num_c in range(0,self.num_files*self.num_channels,self.num_channels):
-            _raw = self.raw[num_c:num_c+self.num_channels]
-            # print(_height)
-            _raw.T.to_csv('./Results/raw/File %s raw.csv' % str(num_c),
-                                     float_format='%.6f')
-        print('# 保存完成!')
-
-    def save_rcs(self):
-        """
-        说明：保存每个channel的raw数据
-        """
-        self.get_rcs()
-        print('# 准备[%s]数据' % str("rcs"))
-        for num_c in range(0,self.num_files*self.num_channels,self.num_channels):
-            _rcs = self.rcs[num_c:num_c+self.num_channels]
-               # print(_height)
-            _rcs.T.to_csv('./Results/rcs/File %s rcs.csv' % str(num_c),
-                            float_format='%.6f')
-        print('# 保存完成!')
+        if data == "Height":
+            self.get_height()
+            channel_data = self.height
+            _save(self, data=data, channel_data=channel_data)
+        elif data == "Raw":
+            self.get_raw_data()
+            channel_data = self.raw
+            _save(self, data=data, channel_data=channel_data)
+        else:
+            self.get_rcs()
+            channel_data = self.rcs
+            _save(self, data=data, channel_data=channel_data)
