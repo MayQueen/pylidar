@@ -64,6 +64,7 @@ class Klett():
 
             # 保存计算结果
             self.alpha.append(var_alpha_z)
+        print("计算完成")
         return self.alpha
         # print(self.alpha)
 
@@ -71,29 +72,163 @@ class Klett():
         '''
         # 计算后向散射系数beta_z
         '''
-        print("开始计算后向散射系数beta")
         self.alpha_z()
+        print("开始计算后向散射系数beta")
         for index,alpha in enumerate (self.alpha):
             _beta = self.LR_z * alpha ** self.k
             self.beta.append(_beta)
             del  _beta
-        # return self.beta
+        print("计算完成")
+        return self.beta
         # print(len(self.beta))
+
+    def to_csv(self):
+        self.beta_z()
+        pd_height = pd.DataFrame(self.height[:self.ref])
+        pd_alpha = pd.DataFrame(self.alpha)
+        pd_beta = pd.DataFrame(self.beta)
+
+        pd_data= pd.concat([pd_height,pd_alpha,pd_beta],axis=1) # 合并结果
+        pd_data.columns = ["Height","Alpha","Beta"] # 设置文件列名
+        pd_data.to_csv("Results/Coefficient/Klett.csv") # 保存Klett反演结果
+        print("Klett反演结果保存成功")
 
 
 class Fernald():
     def __init__(self):
         pass
 
-    def beta_mol(self, r):
-        '''
-        大气分子后向散射系数与高度r的函数关系式
-        '''
-        c1 = 2.3850e-8
-        c2 = 1012.8186 - 111.5569 * r + 3.8645 * (r ** 2)
-        c3 = 294.9838 - 5.2159 * r - 0.0711 * (r ** 2)
-        beta_mol = c1 * (c2 / c3)
+    def temp(self,season, longitude,h):
+        """
+        温度[K]随高度[km]的变化函数
+        """
+        if season =="Summer":# 夏季[4-9]
+            print("采用[夏]时令[温度]计算方案")
+
+            # 低纬度 [小于22°]
+            if longitude < 22:
+                print("采用[低纬度]计算方案")
+
+            # 中纬度[22~45°]
+            elif longitude >= 22 and longitude <= 45:
+                print("采用[中纬度]计算方案")
+                if h >= 0 and h < 13:
+                    return 294.9838 - 5.2159 * h - 0.07109 * h ** 2
+                elif h >= 13 and h < 17:
+                    return 215.5
+                elif h >= 17 and h < 47:
+                    return 215.5 * exp((h - 17) * 0.008128)
+                elif h >= 47 and h < 53:
+                    return 275
+                elif h >= 53 and h < 80:
+                    return 275 + (1 - exp((h - 53) * 0.06)) * 20
+                elif h >= 80 and h < 100:
+                    return 175
+                else:
+                    print("无法计算,因为高度大于100km")
+
+            # 高纬度[大于45°]
+            else:
+                print("采用[高纬度]计算方案")
+        else:# 冬季[10-12,1-3]
+            print("采用[冬]时令[温度]计算方案")
+
+            # 低纬度 [小于22°]
+            if longitude < 22:
+                print("采用[低纬度]计算方案")
+
+            # 中纬度[22~45°]
+            elif longitude >= 22 and longitude <= 45:
+                print("采用[中纬度]计算方案")
+                if h >= 0 and h < 10:
+                    return 272.7241 - 3.6217 * h - 0.1759 * h ** 2
+                elif h >= 10 and h < 33:
+                    return 218
+                elif h >= 33 and h < 47:
+                    return 218 + (h - 33) * 3.3571
+                elif h >= 47 and h < 53:
+                    return 265
+                elif h >= 53 and h < 80:
+                    return 265 - (h - 53) * 2.0370
+                elif h >= 80 and h < 100:
+                    return 210
+                else:
+                    print("无法计算,因为高度大于100km")
+
+            # 高纬度[大于45°]
+            else:
+                print("采用[高纬度]计算方案")
+
+    def press(self,season,longitude,h):
+        """
+        压力[hPa]随高度[km]的变化函数
+        """
+        if season == "Summer": # 夏季[4-9]
+            print("采用[夏]时令[压力]计算方案")
+            # 低纬度[小于22°]
+            if longitude < 22:
+                print("采用[低纬度]计算方案")
+            # 中纬度[22~45°]
+            elif longitude >= 22 and longitude <= 45:
+                print("采用[中纬度]计算方案")
+                if h >= 0 and h < 10:
+                    return 1012.8186 - 111.5569 * h + 3.8646 * h ** 2
+                elif h >= 10 and h < 72:
+                    # p_10 = 1012.8186-111.5569*10+3.8646*10**2
+                    p_10: float = 283.7096
+                    return p_10 * exp(-0.147 * (h - 10))
+                elif h >= 72 and h < 100:
+                    # p_72 = p_10*exp(-0.147*(72-10))
+                    p_72: float = 0.03124
+                    return p_72 * exp(-0.165 * (h - 72))
+                else:
+                    print("无法计算,因为高度大于100km")
+            # 高纬度 [大于45°]
+            else:
+                print("采用[高纬度]计算方案")
+        else: # 冬季[10-12,1-3]
+            print("采用[冬]时令[压力]计算方案")
+
+            # 低纬度[小于22°]
+            if longitude < 22:
+                print("采用[低纬度]计算方案")
+
+            # 中纬度[22~45°]
+            elif longitude >= 22 and longitude <= 45:
+                print("采用[中纬度]计算方案")
+                if h >= 0 and h < 10:
+                    return 1018.8627 - 124.2954 * h + 4.8307 * h ** 2
+                elif h >= 10 and h < 72:
+                    # p_10 = 1018.8627-124.2954*10+4.8307*10**2
+                    p_10: float = 258.9787
+                    return p_10 * exp(-0.147 * (h - 10))
+                elif h >= 72 and h < 100:
+                    # p_72 = p_10*exp(-0.147*(72-10))
+                    p_72: float = 0.028517
+                    return p_72 * exp(-0.155 * (h - 72))
+                else:
+                    print("无法计算,因为高度大于100km")
+
+            # 高纬度[大于45°]
+            else:
+                print("采用[高纬度]计算方案")
+
+    def beta_mol(self,wavelength,season,longitude,h):
+        # wavelength = 355 # [nm]
+        numbda = str(wavelength)
+        t0 = 25.7 # [℃]
+        p0 = 1006.6 # [hPa]
+        n_s = {"355":1.000285745,"387":1.000283480,"532":1.000278235,"1064":1.000273943}
+        c_numb = {"355":3.62854e-08,"387":3.57125e-08,"532":3.44032e-08,"1064":3.33502e-08}
+        Fk= {"355":1.05289,"387":1.05166,"532":1.04899,"1064":1.04721}
+
+        n_r = n_s[numbda]*(t0/p0)*(self.press(season,longitude,h)/self.temp(season,longitude,h))
+
+        c1 = 9*pow(pi,2)
+        c2 = pow(wavelength,4)*pow(n_s[numbda],2)
+        beta_mol = n_r*(c1/c2)*c_numb[numbda]*Fk[numbda]
         return beta_mol
+        # print(beta_mol)
 
     def alpha_mol(self, r, LR_mol):
         '''
@@ -159,9 +294,6 @@ class Fernald():
 
         # return beta_r
 
-    # rcs = [5.241926131, 3.26489019, 3.795168048, 2.361559713, 2.075695638, 1.972212843]
-    # beta_r(rcs, r=1)
-
 
 if __name__ == "__main__":
     print('开始读取RCS数据')
@@ -171,5 +303,11 @@ if __name__ == "__main__":
     print('使用Kletthod方法反演雷达方程')
     RM = Klett(height=h, rcs=rcs)
     # alpha = RM.alpha_z()
-    alpha = RM.beta_z()
+    # alpha = RM.beta_z()
+    # alpha = RM.to_csv()
+    Fernald = Fernald()
+    # p = Fernald.press(season='Summer', longitude=22.02, h=8)
+    # t = Fernald.temp(season='Summer', longitude=22.02, h=8)
+    # print(t)
+    Fernald.beta_mol(355,"Summer",22.02,8)
     print('程序运行结束')
