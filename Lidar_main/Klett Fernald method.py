@@ -21,13 +21,14 @@ class Klett():
     beta : 后向散射系数 backscatter coefficient
     """
 
-    def __init__(self, height, rcs, bin_width=7.5, data_points=16221, ref=3):
+    def __init__(self, height, rcs, bin_width=7.5, data_points=16221, k = 1, ref=-10):
         self.height = height
         self.rcs = rcs
 
         self.alpha = []
         self.beta = []
-        self.k = 0.67
+
+        self.k = k
         self.LR_z = 50
 
         self.bin_width = bin_width  # 单位:m
@@ -37,69 +38,47 @@ class Klett():
     def alpha_z(self):
         '''
         根据Klett雷达反演方法求解激光雷达消光系数alpha_z
-        ref = 3 # 该值为高度列表处于第4位的高度值
-        k = [0.67 - 1]
-        LR_z = [2 - 100]
-
-        alpha_m : 参考高度m下的消光系数,可用斜率法计算
-        S_m : 参考高度m下RCS的自然对数
         '''
-        for h in range(len(self.height)):
-            def fun_rcs(self,h):
-                _rcs = log(self.rcs[h])
-                _rcs_m = log(self.rcs[self.ref])
-                return exp(_rcs - _rcs_m)
-            v,err = integrate.quad(fun_rcs,h,self.ref)
-            print(v)
+        print("开始计算消光系数alpha")
+        # 根据Collis斜率法计算参考高度下的 大气消光系数
+        s_0 = log(self.rcs[0])
+        s_m = log(self.rcs[self.ref])
+        alpha_ref = 0.5 * (s_0 - s_m) / (self.height[self.ref] - self.height[0])
+        # print(alpha_ref)
 
-        # 计算RCS的自然对数 S[x]-S[ref]
-        # def _S(self, x):
-        #     _delta_rcs = log(self.rcs[x]) - log(self.rcs[self.ref])
-        #     return _delta_rcs
-        #
-        # ref_delta = _S(self, 0)
-        # print(ref_delta)
-        # # 根据Collis斜率法计算参考高度下的 大气消光系数
-        # # alpha_ref = 0.5 * ref_delta / (self.height[self.ref] - self.height[0])
-        #
-        # for h_index in range(len(self.height)):
-        #     # h = self.height[h_index]  # 对应高度
-        #     # print(h)
-        #
-        #     def _delta_s(x):
-        #         '''
-        #         构造范围矫正信号(RCS)的自然对数值函数,
-        #         对于每一个高度z都有一个特定的函数。
-        #         '''
-        #         _delta = _S(self, x)
-        #         delta_s = exp(_delta / self.k)
-        #         return delta_s
-        #
-        #     var_exp = _delta_s(h_index)
-        #     # print(var_exp)
-        #
-        #     # 求RCS构造函数在[h,h_ref]区间内的定积分
-        #     inter_s, err = integrate.quad(var_exp, self.height[h_index], self.height[self.ref])
-        #     print(inter_s)  # 积分结果
+        for h in range(len(self.height)+self.ref): # 仅能计算参考高度以下的数值
+        # for h in range(10):
+            s = log(self.rcs[h])
+            s_m = log(self.rcs[self.ref])
+            # print(exp((s - s_m)/self.k))
+            exp_s = (s - s_m) / self.k
+
+            def fun_rcs(x):
+                return exp_s
+
+            interg_s,err = integrate.quad(fun_rcs, h, self.ref)
+            # print(intergra_s)
 
             # 根据Klett方法计算大气消光系数
-            # var_alpha_z = var_exp / ((1/alpha_ref) - (2/self.k)*inter_s)
+            var_alpha_z = interg_s / ((1/alpha_ref) - (2/self.k)*exp_s)
 
             # 保存计算结果
-            # self.alpha.append(var_alpha_z)
-        # return self.alpha
+            self.alpha.append(var_alpha_z)
+        return self.alpha
         # print(self.alpha)
 
     def beta_z(self):
         '''
         # 计算后向散射系数beta_z
         '''
-        np_alpha = np.array(self.alpha)  # 列表转化为numpy数组
-        posi_alpha = np.where(np_alpha > 0, np_alpha, 0)  # 将数组中小于0的元素置0
-        self.beta = [self.LR_z * (var_alpha_z ** self.k)
-                     for var_alpha_z in posi_alpha]  # 计算beta_z
-        return self.beta
-        # print(self.beta)
+        print("开始计算后向散射系数beta")
+        self.alpha_z()
+        for index,alpha in enumerate (self.alpha):
+            _beta = self.LR_z * alpha ** self.k
+            self.beta.append(_beta)
+            del  _beta
+        # return self.beta
+        # print(len(self.beta))
 
 
 class Fernald():
@@ -189,8 +168,8 @@ if __name__ == "__main__":
     data_path = "Results/plotdata/Klett.xlsx"
     h = np.array(pd.read_excel(data_path, sheet_name="H", header=0, index_col=0))
     rcs = np.array(pd.read_excel(data_path, sheet_name="RCS", header=0, index_col=0))
-    # print(rcs[0])
     print('使用Kletthod方法反演雷达方程')
     RM = Klett(height=h, rcs=rcs)
-    alpha = RM.alpha_z()
+    # alpha = RM.alpha_z()
+    alpha = RM.beta_z()
     print('程序运行结束')
