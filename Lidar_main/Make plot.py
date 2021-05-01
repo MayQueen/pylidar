@@ -21,7 +21,7 @@ class plot (object):
     def plot_pbl(self,pd_pbl=[],):
         # Data for plotting
         x = pd_pbl["Time"]
-        y = pd_pbl["pbl"]
+        y = pd_pbl["ubl"]
 
         y_mean = pd.DataFrame.mean(y)
         # print(x.iloc[-9])
@@ -68,16 +68,16 @@ class plot (object):
         plt.show()
 
 rcs_path = "Results/plotdata/plot_data.xlsx"
-pbl_path = "./Results/pbl/pbl.csv"
+pbl_path = "Results/ubl/pbl.csv"
 
 x = pd.read_excel(rcs_path,sheet_name="x", index_col=None)
 y = pd.read_excel(rcs_path,sheet_name="y", index_col=None)
 z = pd.read_excel(rcs_path,sheet_name="z", index_col=None)
 
 pbl = pd.read_csv(pbl_path)
-# print(pbl)
+# print(ubl)
 date_range = r"2019-01-20"
 #
 tplot = plot()
 tplot.plot_heatmap(x, y, z, date_range)
-# tplot.plot_pbl(pbl)
+# tplot.plot_pbl(ubl)

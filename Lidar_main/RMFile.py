@@ -8,6 +8,7 @@
 
 import numpy as np
 import pandas as pd
+import os
 
 
 class RM_reader(object):
@@ -35,7 +36,7 @@ class RM_reader(object):
         self.header_info = {}
 
         # 通道信息
-        self.Channel_header = ['Active', 'Analog_Ghoton', 'Laser_used', 'Number_of_datapoints', '1', 'HV',
+        self.channel_header = ['Active', 'Analog_Ghoton', 'Laser_used', 'Number_of_datapoints', '1', 'HV',
                                'Bin_width', 'Wavelength', 'D1', 'D2', 'D3', 'D4', 'ADCbits', 'Number_of_shots',
                                'Input_range', 'ID']
         self.channel_info = []
@@ -105,7 +106,7 @@ class RM_reader(object):
         """
         获取每条通道的数据的条目数
         """
-        self.num_points = [self.channel_info[_idx2][3]
+        self.num_points = [int(self.channel_info[_idx2][3])
                            for _idx2 in range(len(self.channel_info))]
 
     # 读取file_data
@@ -128,7 +129,7 @@ class RM_reader(object):
         """
         读取文件的bin width
         """
-        self.bin_width = [self.channel_info[_idx4][6]
+        self.bin_width = [float(self.channel_info[_idx4][6])
                           for _idx4 in range(len(self.channel_info))]
 
     # 获取wavelength
@@ -136,7 +137,7 @@ class RM_reader(object):
         """
         获取每个channel的波长和极化方式.o=无极化;s=垂直;p=平行
         """
-        self.wavelength = [self.channel_info[_idx5][7]
+        self.wavelength = [str(self.channel_info[_idx5][7])
                            for _idx5 in range(len(self.channel_info))]
 
     # 获取adcbits
@@ -144,7 +145,7 @@ class RM_reader(object):
         """
         获取文件的adcbits
         """
-        self.adcbits = [self.channel_info[_idx6][-4]
+        self.adcbits = [int(self.channel_info[_idx6][-4])
                         for _idx6 in range(len(self.channel_info))]
 
     # 获取num_shots
@@ -152,7 +153,7 @@ class RM_reader(object):
         """
         获取文件的发射次数（number of shots）
         """
-        self.num_shots = [self.channel_info[_idx7][-3]
+        self.num_shots = [int(self.channel_info[_idx7][-3])
                           for _idx7 in range(len(self.channel_info))]
 
     # 获取input_range
@@ -160,7 +161,7 @@ class RM_reader(object):
         """
         获取文件的input range
         """
-        self.input_range = [self.channel_info[_idx8][-2]
+        self.input_range = [float(self.channel_info[_idx8][-2])
                             for _idx8 in range(len(self.channel_info))]
 
     # 获取dataset_mode：数据类型
@@ -204,260 +205,231 @@ class muti_RM_reader(RM_reader):
     """
     说明：读取多个RM文件
     输入：文件路径
-    可用的方法：save_header_info;save_info
+    可用的方法：save_header_info;save_channel_info
     属性：muti_header_info;muti_channel_info;muti_file_data
     """
 
     def __init__(self, RM_PATH_LIST):
-        self.muti_header_info = []  # 多个文件的头文件
+        # self.muti_header_info = []  # 多个文件的头文件
 
-        self.muti_channel_info = []  # 多个文件的通道
-        self.muti_file_data = []  # 多个文件的数据
+        # self.muti_channel_info = []  # 多个文件的通道
+        # self.muti_file_data = []  # 多个文件的数据
 
         self.path_list = RM_PATH_LIST  # 多个文件的路径
-        self.num_files = len(self.path_list)
-        print("该目录下共有%s" % self.num_files + '个RM文件' + '\n')
 
-        for ipx in range(len(self.path_list)):
+        print("该目录下共有%s" % len(self.path_list) + '个RM文件' + '\n')
+        muti_header_info, muti_channel_info, muti_file_data, muti_wavelength, muti_dataset_mode = [], [], [], [], []
+        for ipx, value in enumerate(self.path_list):
             # 继承RM_Reader类
-            single_RM = RM_reader(self.path_list[ipx])
+            single_RM = RM_reader(value)
 
             print('# 准备读取第%s' % str(ipx + 1) + '个文件')
             single_RM.single_reader()  # 主要
 
-            self.muti_header_info.append(single_RM.header_info)
+            muti_header_info.append(single_RM.header_info)  # 列表字典嵌套[{},{}]
+            muti_channel_info.append(single_RM.channel_info)  # 列表嵌套[[[],[]],[[],[]]]
+            muti_file_data.append(single_RM.file_data)  # 列表嵌套[[array[],array[],array[]],[array[],array[],array[],]]
+            muti_wavelength.append(single_RM.wavelength)  # 列表嵌套[[array[],array[],array[]],[array[],array[],array[],]]
+            muti_dataset_mode.append(
+                single_RM.dataset_mode)  # 列表嵌套[[array[],array[],array[]],[array[],array[],array[],]]
 
-            self.muti_channel_info.append(single_RM.channel_info)
-
-            single_data = pd.DataFrame(
-                single_RM.file_data, index=single_RM.dataset_mode).T
-            # print(single_data)
-            self.muti_file_data.append(single_data)
-        # print(self.muti_file_data[0])
+        self.muti_header_info = pd.DataFrame(muti_header_info)
+        self.muti_channel_info = pd.DataFrame(muti_channel_info, index=self.muti_header_info['Filename']).T
+        self.muti_file_data = pd.DataFrame(muti_file_data, index=self.muti_header_info['Filename'],
+                                           columns=muti_wavelength[0]).T
+        del muti_header_info, muti_channel_info, muti_file_data, muti_wavelength, muti_dataset_mode
+        # print(self.muti_header_info)
 
     def save_header_info(self):
         _csv_path = './Results/RMFiles/RM_File_header_info.csv'
-
-        self.key_headerInfo = self.muti_header_info[0].keys()
-
-        _DF_headerInfo = pd.DataFrame([self.muti_header_info[i].values(
-        ) for i in range(self.num_files)], columns=self.key_headerInfo).T
-
-        _DF_headerInfo.to_csv(_csv_path, header=False)
-        # print(_DF)
+        self.muti_header_info.to_csv(_csv_path)
         print('# RM_File_info文件保存完成')
 
     def save_channel_info(self):
         _csv_path = './Results/RMFiles/RM_File_channel_info.csv'
-        # _Channel_header = ['active', 'analog_photon', 'laser_used', 'number_of_datapoints', '1', 'HV', 'bin_width', 'wavelength', 'd1', 'd2', 'd3', 'd4', 'ADCbits', 'number_of_shots', 'input_range', 'ID']
-        _Channel_index = [self.muti_header_info[i]['Filename'] for i in range(self.num_files)]
-
-        _DF_ChannInfo = pd.DataFrame(self.muti_channel_info, index=_Channel_index).T
-        # print(_DF_ChannInfo)
-        _DF_ChannInfo.to_csv(_csv_path, index=False)
+        self.muti_channel_info.to_csv(_csv_path)
         print('# RM_File_Channel_info文件保存完成')
 
 
-class RM_Calculate():
-    """
-    说明：处理RM File 中每个频道(channel)的数据
-    输入：
-        muti_channel_info, muti_file_data
-    """
+class RM_Cal(RM_reader):
+    def __init__(self, SINGLE_RM_PATH):
+        self.single_RM = RM_reader(SINGLE_RM_PATH)
+        self.single_RM.single_reader()  # 主要
 
-    def __init__(self, muti_header_info, muti_channel_info, muti_file_data):
-        self.muti_header_info = muti_header_info
-        self.muti_channel_info = muti_channel_info
+        self.bin_width = self.single_RM.bin_width
+        self.num_points = self.single_RM.num_points
 
-        self.num_files = len(self.muti_channel_info)
-        self.num_channels = len(self.muti_channel_info[0])
+        self.dataset_mode = self.single_RM.dataset_mode
+        self.wavelength = self.single_RM.wavelength
 
-        self.muti_file_data = np.array(muti_file_data)
+        self.input_range = np.array(self.single_RM.input_range)
+        self.adcbits = np.array(self.single_RM.adcbits)
+        self.num_shots = np.array(self.single_RM.num_shots)
+        self.file_data = self.single_RM.file_data
 
-        # self.height = []
-        # self.raw = []
-        # self.rcs = []
-        self.start_time = []
-        self.end_time = []
+        self.channel_info = self.single_RM.channel_info
+        self.channel_header = self.single_RM.channel_header
+        self.channel = pd.DataFrame(self.channel_info, columns=self.channel_header)
 
-        self.adcbits = []  # "ADCbits"
-        self.data_points = []  # number_of_datapoints
-        self.bin_width = []  # bin_width, 单位:m
-        self.shot_number = []  # "number_of_shots"
-        self.input_range = []  # BC:input_range;BT:discriminator
-        self.dataset_mode = []  # dataset_mode
+        self.header_info = self.single_RM.header_info
+        self.header_label = self.single_RM.header_label
 
-        for idx in range(self.num_files):
-            print('# 开始处理第%s' % str(idx + 1) + '个文件')
-            for idc in range(self.num_channels):
-                self.adcbits.append(
-                    int(self.muti_channel_info[idx][idc][-4]))  # "ADCbits"
-                # "number_of_datapoints
-                self.data_points.append(
-                    int(self.muti_channel_info[idx][idc][3]))
-                self.bin_width.append(
-                    float(self.muti_channel_info[idx][idc][6]))  # bin_width, 单位:m
-                self.shot_number.append(
-                    int(self.muti_channel_info[idx][idc][-3]))  # "number_of_shots"
-                # BC:input_range;BT:discriminator
-                self.input_range.append(
-                    float(self.muti_channel_info[idx][idc][-2]))
-                # BT:analogue dataset; BC:photon counting
-                self.dataset_mode.append(
-                    str(self.muti_channel_info[idx][idc][-1][:2]))
-                self.start_time.append(
-                    str(self.muti_header_info[idx]['Start_time']))
-
-                self.end_time.append(
-                    str(self.muti_header_info[idx]['End_time']))
+        self.Filename = self.single_RM.header_info["Filename"]
 
     def get_height(self):
         """
         根据channel的信息计算height
+        输入:self.bin_with, self.num_points
+        输出:self.height
         """
-
         print('# 开始计算Height')
-        _height = []
-        for ibin in range(len(self.bin_width)):
-            print("Height:第%s次计算" % str(ibin+1))
-            _height.append([self.bin_width[ibin] * num_bin for num_bin in range(self.data_points[ibin])])
-        self.height = pd.DataFrame(_height)
-        return self.height
+        t_height = []
+        for index, value in enumerate(self.bin_width):
+            # print(value)
+            num_bin = np.array([num_bin for num_bin in range(1, int(self.num_points[index]) + 1)])
+            # print(num_bin)
+            _height = num_bin * float(value)
+            # print(_height)
+            t_height.append(_height)
+        self.height = pd.DataFrame(t_height).T
+        del _height, t_height
         # print(self.height)
-        # print(self.start_time)
-        # print(self.end_time)
 
-    def _get_mVolts(self, single_file, ichannel, num_p):
-        _input_range = float(self.input_range[ichannel])
-        _adcbits = int(self.adcbits[ichannel])
-        _shot_number = int(self.shot_number[ichannel])
-        _bin_width = float(self.bin_width[ichannel])
-
-        _file_data = float(single_file.iloc[ichannel][num_p])
-
-        _mVolts = (_file_data * _input_range * 1000) / \
-                  (2 ** _adcbits * _shot_number)
-        return _mVolts
-
-    def get_raw_data(self):
-        """
-        根据channel的信息计算raw_data
-        """
-        self.get_height() # 计算Raw data 前必须先计算height
-
+    def get_raw(self):
+        # 根据dataset_mode类型,选择计算公式
+        print('# 开始计算Raw')
         _raw = []
-
-        print('# 开始计算raw')
-        for num_f in range(self.num_files):
-            single_file = pd.DataFrame(self.muti_file_data[num_f], columns=[
-                'BT', 'BC', 'BT', 'BC', 'BT', 'BC', 'PD']).T
-            # print(single_file[0])
-            for ichannel in range(self.num_channels):
-                print("Raw Data:第%s次计算" % str(ichannel+1))
-                _input_range = float(self.input_range[ichannel])
-                _adcbits = int(self.adcbits[ichannel])
-                _shot_number = int(self.shot_number[ichannel])
-                _bin_width = float(self.bin_width[ichannel])
-                _num_points = int(self.data_points[ichannel])
-                # _num_points = 10
-
-                # 根据dataset_mode类型,选择计算公式
-                if single_file.iloc[ichannel].name == 'BT':  # 模拟信号
-                    _signal_mVolts = []
-                    for num_p in range(_num_points):
-                        # print (single_file.iloc[ichannel][num_p])
-                        _mVolts = self._get_mVolts(
-                            single_file, ichannel, num_p)
-                        _signal_mVolts.append(_mVolts)
-                    # print(signal_mVolts)
-                    _raw.append(_signal_mVolts)
-
-                elif single_file.iloc[ichannel].name == 'BC':  # 光信号
-                    _signal_MHz = []
-                    for num_p in range(_num_points):
-                        # print (single_file.iloc[ichannel][num_p])
-
-                        _file_data = float(single_file.iloc[ichannel][num_p])
-                        _MHz = (_file_data * (150 / _bin_width)) / _shot_number
-
-                        _signal_MHz.append(_MHz)
-                    # print(signal_MHz)
-                    _raw.append(_signal_MHz)
-
-                else:  # 混合信号
-                    _signal_mix = []
-                    for num_p in range(_num_points):
-                        # _file_data = float(single_file.iloc[ichannel][num_p])
-                        if num_p < int(self.shot_number[0]):  # 混合信号分界线
-                            # print(num_p)
-                            _mix_mv = self._get_mVolts(
-                                single_file, ichannel, num_p)
-                            _signal_mix.append(_mix_mv)
-                        else:
-                            _file_data = float(
-                                single_file.iloc[ichannel][num_p])
-                            _mix_MHz = (_file_data * (150 / _bin_width)) / _shot_number
-
-                            _signal_MHz.append(_mix_MHz)
-                    _raw.append(_signal_mix)
-
-        self.raw = pd.DataFrame(_raw)
-        del _raw, _signal_mVolts, _signal_MHz, _signal_mix  # 删除变量
-        return self.raw
-        # print(pd.DataFrame(self.raw))
-        print('# raw计算完成')
+        for index in range(len(self.dataset_mode)):
+            mode = self.dataset_mode[index]
+            channel_data = self.file_data[index]
+            # print(channel_data.shape)
+            if mode == 'BT':  # 模拟信号
+                # print('模拟信号')
+                _mVolts = (channel_data * self.input_range[index] * 1000) / (
+                        2 ** self.adcbits[index] * self.num_shots[index])
+                # print(_mVolts)
+                _raw.append(_mVolts)
+            elif mode == 'BC':  # 光信号
+                # print('光信号')
+                _MHz = (channel_data * (150 / self.bin_width[index])) / self.num_shots[index]
+                # print(_MHz)
+                _raw.append(_MHz)
+            else:  # 混合信号
+                # print('混合信号')
+                _mix = (channel_data * self.input_range[index] * 1000) / (
+                        2 ** self.adcbits[index] * self.num_shots[index])
+                # print(_mix)
+                _raw.append(_mix)
+        self.raw = pd.DataFrame(_raw).T
+        print('[Raw]计算完成' + '\n')
+        # print(self.raw)
 
     def get_rcs(self):
         """
         计算范围矫正信号(RCS,range corrected signal)
         """
-        self.get_raw_data() # 计算rcs前必须先计算Raw
-        _rcs = []
+        self.get_height()
+        self.get_raw()  # 计算rcs前必须先计算Raw
+
         print('# 开始计算RCS')
+        # print(self.height)
+        # print(self.raw)
 
-        for ichannel in range(self.num_channels * self.num_files):
-            print("RCS :第%s次计算" % str(ichannel))
+        _rcs = []
+        for index, value in enumerate(self.raw):
+            # print(index)
             # STEP 1:Overlap Corrected signal 去除低空重叠信号
-            # OCS = self.raw.loc[ichannel][29:1009]
-            OCS = self.raw.loc[ichannel][20:1001]
-
-            h = self.height.loc[ichannel][20:1001]
-            # h = self.height.loc[ichannel][21:1001]
+            OCS = self.raw[index][20:]
+            h = self.height[index][20:]
+            # print(OCS.shape)
+            # print(h.shape)
 
             # STEP 2:Background Corrected signal 背景修正
-            background_error = 5.04
+            background_error = OCS.min()
+            # print(background_error)
             BCS = np.array((OCS - background_error))  # 去除噪声信号
 
             # STEP 3:Range Corrected Signal 计算距离修正信号
-            h_2 = np.array(np.square(h))     # height^2
-            RCS = np.multiply(BCS, h_2)
-            # RCS = np.where(_RCS > 0, _RCS, 0.000001)  # 避免去除噪声信号之后出现负值
+            h_2 = np.array(np.square(h))  # height^2
+            # print(h_2)
 
+            RCS = np.multiply(BCS, h_2)
+            # print(RCS)
             _rcs.append(RCS)
-        self.rcs = pd.DataFrame(_rcs)
-        return self.rcs
-        print("RCS:计算完成!")
+        self.rcs = pd.DataFrame(_rcs).T
+        # return self.rcs
         # print(self.rcs)
 
-    def to_csv(self,data):
-        def _save(self,data, channel_data):
-            print('# 准备[%s]数据' % str(data))
-            for num_c in range(0, self.num_files * self.num_channels, self.num_channels):
-                _data = channel_data[num_c:num_c + self.num_channels]
-                # print(_height)
-                _data.T.to_csv('./Results/RMFiles/File %s' % str(num_c) +  '%s.csv' % str(data),
-                                    float_format='%.6f')
-            print('# 保存完成!')
+    def to_csv(self, save_header=True, save_channel=True, save_height=False, save_raw=False, save_rcs=True):
+        if save_header:
+            self.header_label = np.array(self.header_label).T
+            self.header = pd.DataFrame(self.header_info.values(), index=self.header_label)
+            print('准备保存[Header]数据')
+            self.header.to_csv('./Results/RMFiles/File/HeaderInfo_%s' % str(self.Filename) + '.csv',
+                               float_format='%.6f', header=None)
+            print('[Header]保存完成' + '\n')
 
-        if data == "Height":
+        if save_channel:
+            print('准备保存[Channel]数据')
+            self.channel.to_csv('./Results/RMFiles/File/ChannelInfo_%s' % str(self.Filename) + '.csv',
+                                float_format='%.6f')
+            print('[Channel]保存完成' + '\n')
+        if save_height:
             self.get_height()
-            channel_data = self.height
-            _save(self, data=data, channel_data=channel_data)
-        elif data == "Raw":
-            self.get_raw_data()
-            channel_data = self.raw
-            _save(self, data=data, channel_data=channel_data)
-        else:
+            print('准备保存[Height]数据')
+            self.height.to_csv('./Results/RMFiles/File/Height_%s' % str(self.Filename) + '.csv',
+                               float_format='%.6f', header=self.wavelength)
+            print('[Height]保存完成' + '\n')
+        if save_raw:
+            self.get_raw()
+            print('准备保存[Raw]数据')
+            self.raw.to_csv('./Results/RMFiles/File/Raw_%s' % str(self.Filename) + '.csv',
+                            float_format='%.6f', header=self.wavelength)
+            print('[Raw]保存完成' + '\n')
+        if save_rcs:
             self.get_rcs()
-            channel_data = self.rcs
-            _save(self, data=data, channel_data=channel_data)
+            print('准备保存[RCS]数据')
+            self.rcs.to_csv('./Results/RMFiles/File/RCS_%s' % str(self.Filename) + '.csv',
+                            float_format='%.6f', header=self.wavelength)
+            print('[RCS]保存完成' + '\n')
+
+
+class muti_RM_Cal(RM_Cal):
+    def __init__(self, muti_path_list):
+        self.path_list = muti_path_list
+
+    def cal_raw(self):
+        _raw = []
+        for index, value in enumerate(self.path_list):
+            print('准备处理第%s个文件' % str(index + 1) + '\n')
+            # print(index)
+            rm_cal = RM_Cal(value)
+            rm_cal.get_raw()
+            _raw.append(rm_cal.raw)
+        self.muti_raw = np.array(_raw)
+
+    def save_raw(self):
+        pass
+
+
+if __name__ == "__main__":
+    print('\n' + '程序开始运行!' + '\n')
+    RM_PATH = "..\Data" + "\\"
+    path_list = []
+
+    file_path = os.listdir(RM_PATH)
+    for ifile in file_path:
+        if ifile.startswith('RM'):
+            file_name = ifile
+            path_list.append(str(RM_PATH) + str(file_name))
+
+    print('共有%s个文件需要处理' % str(len(path_list)) + '\n')
+    # rm_cal = RM_Cal(path_list[0])
+    # for index, value in enumerate(path_list):
+    #     print('准备处理第%s个文件' % str(index+1)+'\n')
+    #     # print(index)
+    #     rm_cal = RM_cal(value)
+    #     rm_cal.to_csv(1, 1, 1, 1, 1)
+
+    mRC = muti_RM_Cal(path_list)
+    mRC.cal_raw()

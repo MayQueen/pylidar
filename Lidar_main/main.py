@@ -67,22 +67,11 @@ if __name__ == "__main__":
 
     RM_main = rm_processing(RM_PATH)
     RM_reader = RM_main.reader()  # 读取文件
-    RM_cal = RM_main.calculate()  # 开始计算
-
-    # RM_reader
-    # print(RM_reader.muti_header_info)
-    # print(RM_reader.muti_channel_info)
-    # print(RM_reader.muti_file_data)
-
     # RM_reader.save_header_info()
-    # RM_reader.save_channel_info()s
-    # RM_reader.save_file_data()
+    # RM_reader.save_channel_info()
+    RM_cal = RM_main.calculate()  # 开始计算
+    # RM_cal.get_height()
+    RM_cal.get_raw_data()
 
-    # RM_Calculate
-    # print(RM_cal.muti_channel_info)
-    # print(RM_cal.input_range)
-
-    RM_cal.to_csv('RCS') # ['Height','Raw','RCS']
-    # RM_cal.get_raw_data()
-
+    # RM_cal.to_csv('Height')  # ['Height','Raw','RCS']
     print('\n' + '### 程序运行完成!')
