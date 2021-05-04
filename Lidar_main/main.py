@@ -7,7 +7,7 @@
 '''
 
 import os
-from RMFile import muti_RM_reader, RM_Calculate
+import RMFile
 
 
 class rm_processing():
