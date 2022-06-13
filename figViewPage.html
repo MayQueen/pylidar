@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv = "X-UA-Compatible" content = "IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<script type="text/javascript" src="lidarSRC/resources/jquery-3.6.0.min.js"></script>
+<title>figViewPage</title>
+</head>
+<body>
+<div id="main">
+  <h1 align="center">激光雷達反演結果可視化界面</h1>
+  <hr>
+  <div id="input_frame">
+    <div id="date_frame" class="div_var">
+      <h2>日期選擇</h2>
+      <input id="date" type="date">
+    </div>
+
+    <div id="var_frame" class="div_var">
+      <h2>變量選擇</h2>
+      <select id="figvar" class="form-control">
+        <option value="">請選擇變量</option>
+        <option value="RCS">RCS</option>
+        <option values="DepolarizationRatio">DepolarizationRatio</option>
+        <option values="PBL">PBL</option>
+        <option values="Cloud">Cloud</option>
+        <option values="BackScattering">BackScattering</option>
+        <option values="Extinction">Extinction</option>
+        <option values="AOD">AOD</option>
+        <option values="VIS">VIS</option>
+      </select>
+    </div>
+    <div style="width:300px ;display: inline-block;text-align: center;">
+      <button id="btn" class="button">確定</button>
+    </div>
+
+    <hr>
+  </div>
+
+  <div id="display_frame" style="text-align: center;"> 
+    <!-- 这里用来显示读取结果 --> 
+    <p id="default_desc"> 圖片展示區</p>
+  </div>
+  </div>
+  <hr>
+  <p>聯繫郵箱:mayqueen2016@163.com</p>
+</div>
+<style>
+  .div_var{
+    width:300px ;
+    display: inline-block;
+    text-align: center;
+  }
+  .button{
+    font-size: 18px;
+    width: 60px;
+  }
+</style>
+<script type="text/javascript">
+  btn.onclick = function(){
+    // 去掉2021-03-15中的“-”
+    var _figdate = $("#date").val();
+    var items = _figdate.split("-");
+    var figdate = items.join("")
+
+    var figvar = $("#figvar").val();
+    console.log(figvar)
+
+    // 图片的相对路径
+    var figpath = "./outputPNG" + "/" + figdate.substring(0,6) + "/" + figdate + figvar + ".png"
+    console.log(figpath)
+
+    $("#default_desc").html('<img src='+figpath+' alt=""/>');
+
+
+  }
+</script>
+</body>
+</html>
